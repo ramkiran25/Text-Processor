@@ -1,0 +1,1 @@
+The system architecture leverages Java 17 features. Dr. Smith optimized the streaming parser to minimize memory usage down to an O(1) footprint. It successfully streams text fragments without full garbage collection cycles.
