@@ -62,7 +62,6 @@ public class StreamingTextParser {
         }
       }
     }
-
     // Flush any leftover word stuck in the trailing buffer at EOF
     if (wordLen > 0) {
       handler.onWord(wordBuffer, wordLen);
