@@ -3,7 +3,6 @@ package com.textprocessor.parser;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
-
 /**
  * High-performance, memory-safe streaming tokenizer. Operates with O(1) space complexity by
  * streaming characters directly into a reusable buffer and broadcasting events to a TokenHandler.
