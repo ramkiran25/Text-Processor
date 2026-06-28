@@ -1,8 +1,9 @@
 package com.textprocessor.service;
 
 import org.springframework.stereotype.Service;
-import com.textprocessor.model.LoginRequest;
-import com.textprocessor.model.LoginResponse;
+import com.textprocessor.dto.LoginRequest;
+import com.textprocessor.dto.LoginResponse;
+
 
 @Service
 public class AuthService {
