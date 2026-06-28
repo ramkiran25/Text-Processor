@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginForm } from './login-form/login-form';
 import { TextProcessorComponent } from './text-processor/text-processor-component/text-processor-component';
-import { authGuard } from './text-processor/AuthGuard';
+import { authGuard } from './text-processor/auth.guard';
 
 export const routes: Routes = [
 	{ 

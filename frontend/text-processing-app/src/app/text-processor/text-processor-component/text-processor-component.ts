@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
-import { TextProcessingService } from '../TextProcessingService';
+import { TextProcessingService } from '../text-processing.service';
 import { finalize } from 'rxjs/operators';
 import { Subscription, interval } from 'rxjs';
 

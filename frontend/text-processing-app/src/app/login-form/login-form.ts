@@ -8,7 +8,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../text-processor/authService';
+import { AuthService } from '../text-processor/auth.service';
 import { finalize } from 'rxjs';
 
 @Component({
