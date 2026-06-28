@@ -1,0 +1,270 @@
+:host {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  min-height: 100vh;
+  padding: 60px 20px;
+  box-sizing: border-box;
+}
+
+/* Central Elevation Card Container */
+.processor-container {
+  max-width: 650px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 
+              0 8px 16px -6px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+h1 {
+  color: #0f172a;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0 0 10px 0;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 0.975rem;
+  margin: 0 0 32px 0;
+  line-height: 1.6;
+}
+
+/* High Contrast Structural Alert Panels */
+.alert {
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 28px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.success-alert {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.error-alert {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Input Fields and Dropdowns Layout */
+.form-control {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.form-control label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+/* Premium Inputs, Selects and Target Controls */
+.form-control input[type="text"],
+.form-control select {
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #1e293b;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.form-control input[type="text"]:focus,
+.form-control select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  background-color: #ffffff;
+}
+
+.form-control input[type="text"]::placeholder {
+  color: #94a3b8;
+}
+
+/* Interactive Drag & Drop Box Zone */
+.file-drop-zone {
+  position: relative;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 36px 24px;
+  text-align: center;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-drop-zone:hover {
+  border-color: #94a3b8;
+  background-color: #f1f5f9;
+}
+
+.file-drop-zone.file-loaded {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  border-style: solid;
+}
+
+.file-drop-zone input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.file-label-btn {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #ffffff;
+  border: 1px solid #d8e2ef;
+  border-radius: 8px;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 0.15s ease;
+}
+
+.file-drop-zone:hover .file-label-btn {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.08);
+}
+
+.file-drop-zone.file-loaded .file-label-btn {
+  border-color: #bfdbfe;
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.file-drop-zone small {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 0.825rem;
+  font-weight: 500;
+}
+
+/* Premium Animated Progress Bar Module */
+.progress-container {
+  margin: 32px 0 12px 0;
+  width: 100%;
+}
+
+.progress-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #334155;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 10px;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  border-radius: 9999px;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Vivid Professional Action Buttons Hierarchy */
+.button-group {
+  margin-top: 32px;
+  width: 100%;
+}
+
+button {
+  width: 100%;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.01em;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 
+              0 2px 4px -1px rgba(37, 99, 235, 0.1);
+}
+
+/* Primary Conversion Call To Action (Vibrant Corporate Blue) */
+button[type="button"]:not(.btn-success) {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+}
+
+button[type="button"]:not(.btn-success):hover:not(:disabled) {
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.3), 
+              0 3px 6px -2px rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+button[type="button"]:not(.btn-success):active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Clean Disabled State */
+button:disabled {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Success State Action Button (Rich Corporate Emerald Green) */
+.btn-success {
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #15803d !important;
+  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2) !important;
+}
+
+.btn-success:hover {
+  background: linear-gradient(180deg, #15803d 0%, #166534 100%) !important;
+  box-shadow: 0 6px 12px -2px rgba(22, 163, 74, 0.3) !important;
+  transform: translateY(-1px);
+}

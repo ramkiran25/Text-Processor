@@ -3,6 +3,7 @@ package com.textprocessor.parser;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
+
 /**
  * High-performance, memory-safe streaming tokenizer. Operates with O(1) space complexity by
  * streaming characters directly into a reusable buffer and broadcasting events to a TokenHandler.
@@ -43,7 +44,6 @@ public class StreamingTextParser {
             wordsInCurrentSentence++;
             wordLen = 0;
 
-            // Handle sentence terminators with abbreviation lookahead bypass
             if (c == '.' && knownAbbreviations.contains(wordStr)) {
               continue;
             }
