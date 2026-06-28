@@ -1,27 +1,37 @@
-<form [formGroup]="loginForm" (ngSubmit)="onSubmit()" autocomplete="new-password">
-  <h1>Login</h1>
+<div class="login-container">
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+    <h2>System Access Gateway</h2>
 
-  <div class="form-control">
-    <label for="email">Email</label>
-    <input
-      formControlName="email"
-      id="email"
-      autocomplete="new-password"
-      type="email"
-      placeholder="Enter your email"
-    />
-  </div>
+    <div class="alert error-alert" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
 
-  <div class="form-control">
-    <label for="password">Password</label>
-    <input
-      formControlName="password"
-      id="password"
-      autocomplete="new-password"
-      type="password"
-      placeholder="Enter your password"
-    />
-  </div>
+    <div class="form-control">
+      <label for="loginUsername">Username</label> <input 
+        type="text" 
+        id="loginUsername" 
+        formControlName="username" 
+        placeholder="Enter user credentials..."
+        [disabled]="isLoading"
+      />
+    </div>
 
-  <button type="submit">Login &#8594;</button>
-</form>
+    <div class="form-control">
+      <label for="loginPassword">Password</label> <input 
+        type="password" 
+        id="loginPassword" 
+        formControlName="password" 
+        placeholder="Enter master password..."
+        [disabled]="isLoading"
+      />
+    </div>
+
+    <div class="button-group">
+      <button 
+        type="submit" 
+        [disabled]="loginForm.invalid || isLoading">
+        <span>{{ isLoading ? 'Verifying Credentials...' : 'Secure Login →' }}</span>
+      </button>
+    </div>
+  </form>
+</div>
