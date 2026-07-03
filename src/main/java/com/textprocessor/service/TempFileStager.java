@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
+
 public class TempFileStager implements Closeable {
   private static final int BUFFER_SIZE = 16 * 1024;
 

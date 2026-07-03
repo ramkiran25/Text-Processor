@@ -1,55 +1,49 @@
 package com.textprocessor;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.textprocessor.output.strategy.OutputStrategy;
 import com.textprocessor.output.strategy.OutputStrategyFactory;
 import com.textprocessor.service.ReaderSupplier;
 import com.textprocessor.service.TextProcessingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
- * Entry point and CLI driver for the text-processing system.
+ * Entry point for the text-processing system — runs in two modes from the same jar:
  *
- * <p>Parses command-line arguments, resolves input/output sources, delegates
- * all processing to the Spring-managed {@link TextProcessingService}, and
- * prints an execution benchmark on completion.
- *
- * <h2>Usage</h2>
+ * <h2>Mode 1 — REST API (no args)</h2>
  * <pre>
+ *   java -jar app.jar
+ * </pre>
+ * Starts a Tomcat web server. All HTTP endpoints in {@code TextProcessingController}
+ * become available on port 8080.
+ *
+ * <h2>Mode 2 — CLI (args present)</h2>
+ * <pre>
+ *   java -jar app.jar &lt;xml|csv&gt; [input_file] [output_file]
+ *
  *   # File → stdout
- *   java -jar app.jar &lt;xml|csv&gt; &lt;input_file&gt;
+ *   java -jar app.jar xml input.txt
  *
  *   # File → file
- *   java -jar app.jar &lt;xml|csv&gt; &lt;input_file&gt; &lt;output_file&gt;
+ *   java -jar app.jar csv input.txt output.csv
  *
- *   # stdin → stdout  (stream is drained to a temp file for the two-pass read)
- *   cat input.txt | java -jar app.jar &lt;xml|csv&gt;
+ *   # stdin → stdout  (drained to a temp file for two-pass read)
+ *   cat input.txt | java -jar app.jar xml
  * </pre>
+ * Tomcat is running throughout. The CLI task completes then the app exits normally.
  *
- * <h2>Memory design</h2>
- * The two-pass streaming pipeline requires reading the source twice.
- * When input comes from stdin (a non-rewindable stream) it is drained to
- * a local temp file first, keeping heap usage well within the 32 MB constraint
- * regardless of input size.
+ * <h2>Mode selection</h2>
+ * Tomcat always starts. If CLI args are present, {@link #run} processes
+ * the file after context refresh and the app exits when done.
  */
 @Slf4j
 @SpringBootApplication
@@ -58,25 +52,31 @@ public class TextProcessorApplication implements CommandLineRunner {
 
     private static final int BUFFER_SIZE = 16 * 1024; // 16 KB — matches parser read buffer
 
-    private final TextProcessingService service;   // injected by Spring — no manual new()
+    private final TextProcessingService service; // Spring-managed — no manual new()
 
     // ── Entry point ───────────────────────────────────────────────────────────
 
     public static void main(String[] args) {
-        System.exit(SpringApplication.exit(SpringApplication.run(TextProcessorApplication.class, args)));
+        SpringApplication.run(TextProcessorApplication.class, args);
     }
 
     // ── CommandLineRunner ─────────────────────────────────────────────────────
 
+    /**
+     * Invoked by Spring after context refresh — only meaningful in CLI mode.
+     * In REST API mode this method is still called but exits immediately
+     * because {@code args} is empty and no CLI work is needed.
+     */
     @Override
     public void run(String... args) throws Exception {
-        CliArgs cliArgs = CliArgs.parse(args);
+        if (args.length == 0) {
+            return; // no CLI args — REST API mode, Tomcat handles everything
+        }
 
+        CliArgs cliArgs = CliArgs.parse(args);
         OutputStrategy strategy = OutputStrategyFactory.forFormat(cliArgs.format());
 
-        // Stage input: physical file or stdin drained to a temp file
         try (InputStage input = InputStage.open(cliArgs.inputFilePath())) {
-
             log.info("Processing: {} ({} MB)",
                     input.displayName(),
                     String.format("%.2f", input.sizeMb()));
@@ -92,7 +92,7 @@ public class TextProcessorApplication implements CommandLineRunner {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     private static Writer openWriter(String outputFilePath) throws IOException {
         OutputStream out = (outputFilePath != null)
@@ -111,7 +111,7 @@ public class TextProcessorApplication implements CommandLineRunner {
     // ── CliArgs — parses and validates the raw args array ────────────────────
 
     /**
-     * Value object that owns argument parsing and validation.
+     * Immutable value object that owns CLI argument parsing and validation.
      * Throws {@link IllegalArgumentException} on bad input — callers decide how to handle it.
      */
     record CliArgs(String format, String inputFilePath, String outputFilePath) {
@@ -121,6 +121,7 @@ public class TextProcessorApplication implements CommandLineRunner {
                 throw new IllegalArgumentException(
                         "Usage: java -jar app.jar <xml|csv> [input_file] [output_file]");
             }
+
             String format         = args[0].trim().toLowerCase();
             String inputFilePath  = args.length >= 2 ? args[1].trim() : null;
             String outputFilePath = args.length >= 3 ? args[2].trim() : null;
@@ -150,8 +151,8 @@ public class TextProcessorApplication implements CommandLineRunner {
      */
     static final class InputStage implements Closeable {
 
-        private final File   file;
-        private final Path   tempPath;   // non-null only when stdin was drained
+        private final File file;
+        private final Path tempPath; // non-null only when stdin was drained
 
         private InputStage(File file, Path tempPath) {
             this.file     = file;
@@ -163,7 +164,7 @@ public class TextProcessorApplication implements CommandLineRunner {
                 return new InputStage(new File(inputFilePath), null);
             }
 
-            // Drain stdin → temp file for two-pass rewind
+            // Drain stdin → temp file so both passes can rewind to the beginning
             log.info("Reading from stdin — buffering to temp file…");
             Path temp = Files.createTempFile("textproc-stdin-", ".tmp");
             try (InputStream stdin = System.in) {
@@ -172,7 +173,7 @@ public class TextProcessorApplication implements CommandLineRunner {
             return new InputStage(temp.toFile(), temp);
         }
 
-        /** A new buffered reader from the beginning of the file — safe to call twice. */
+        /** Opens a fresh buffered reader from byte 0 — safe to call once per pass. */
         ReaderSupplier readerSupplier() {
             return () -> new BufferedReader(
                     new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8),
