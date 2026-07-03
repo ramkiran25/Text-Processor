@@ -1,77 +1,96 @@
 package com.textprocessor.controller;
 
-import java.io.IOException;
+import com.textprocessor.dto.ErrorResponse;
+import com.textprocessor.dto.ProcessingRequest;
+import com.textprocessor.dto.StatusResponse;
+import com.textprocessor.service.TextProcessingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.textprocessor.service.TextProcessingService;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * Thin REST controller — owns only HTTP concerns:
+ *   request binding, response shape, status codes, and error mapping.
+ *
+ * All processing decisions live in {@link TextProcessingService}.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/text")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:4200}")
 public class TextProcessingController {
 
-  private final TextProcessingService textProcessingService;
+    private final TextProcessingService textProcessingService;
 
-  @PostMapping(value = "/process")
-  public ResponseEntity<?> processUploadedFile(
-      @RequestParam("file") MultipartFile multipartFile,
-      @RequestParam("format") String format,
-      @RequestParam(value = "outputPath", required = false) String outputPath,
-      HttpServletResponse response) throws IOException {
+    /**
+     * Accepts a plain-text file and transforms it to the requested format (xml | csv).
+     *
+     * <p>Two output modes driven by {@code outputPath}:
+     * <ul>
+     *   <li>If {@code outputPath} is present → write to server-side disk, return 200 + status body.</li>
+     *   <li>If absent → stream the transformed content as a file download.</li>
+     * </ul>
+     */
+    @PostMapping("/process")
+    public ResponseEntity<?> process(
+            @RequestParam("file")                          MultipartFile file,
+            @RequestParam("format")                        String format,
+            @RequestParam(value = "outputPath", required = false) String outputPath) {
 
-    String requestedFormat = format.trim().toLowerCase();
-    boolean isLocalWrite = outputPath != null && !outputPath.trim().isEmpty();
+        try {
+            var request = ProcessingRequest.of(file, format, outputPath);
 
-    try {
-      // SCENARIO A: User specified a local disk path
-      if (isLocalWrite) {
-        // Pass null for response writer since it saves directly to disk
-        textProcessingService.processMultiPartFile(multipartFile, null, requestedFormat, outputPath);
-        log.info("Local path file serialization finished cleanly to: {}", outputPath);
-        
-        // Return explicit valid JSON to clear Angular's parser
-        return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_JSON)
-            .body("{\"status\":\"SUCCESS\",\"message\":\"Saved locally to disk\"}");
-      }
+            if (request.isLocalWrite()) {
+                textProcessingService.processToLocalDisk(request);
+                return ResponseEntity.ok(new StatusResponse("Success", "Saved to " + outputPath));
+            }
 
-      // SCENARIO B: Standard browser attachment download stream
-      if ("xml".equals(requestedFormat)) {
-        response.setContentType(MediaType.APPLICATION_XML_VALUE);
-      } else if ("csv".equals(requestedFormat)) {
-        response.setContentType("text/csv");
-      } else {
-        throw new IllegalArgumentException("Unsupported format type: " + requestedFormat);
-      }
+            return buildStreamingResponse(request);
 
-      response.setCharacterEncoding("UTF-8");
-      String outputFileName = "processed_document." + requestedFormat;
-      response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + outputFileName + "\"");
+        } catch (IllegalArgumentException e) {
+            log.warn("Bad request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
 
-      textProcessingService.processMultiPartFile(multipartFile, response.getWriter(), requestedFormat, outputPath);
-      log.info("Streaming conversion successfully flushed to browser download pipeline.");
-      
-      return null; // Servlet response stream takes over the execution lifecycle cleanly
-    } catch (IllegalArgumentException e) {
-      log.error("Request validation failed: {}", e.getMessage());
-      return ResponseEntity.badRequest().body("{\"error\":\"" + e.getMessage() + "\"}");
-    } catch (Exception e) {
-      log.error("Unhandled exception during streaming execution: ", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body("{\"error\":\"Internal server processing pipeline failure\"}");
+        } catch (Exception e) {
+            log.error("Unhandled exception during processing", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Internal processing failure"));
+        }
     }
-  }
+
+    // ── private helpers ───────────────────────────────────────────────────────
+
+    private ResponseEntity<StreamingResponseBody> buildStreamingResponse(ProcessingRequest request) {
+        MediaType mediaType    = resolveMediaType(request.format());
+        String    fileName     = "processed_document." + request.format();
+
+        StreamingResponseBody body = outputStream -> {
+            Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
+            textProcessingService.processToStream(request, writer);
+        };
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(body);
+    }
+
+    private static MediaType resolveMediaType(String format) {
+        return switch (format) {
+            case "xml" -> MediaType.APPLICATION_XML;
+            case "csv" -> MediaType.parseMediaType("text/csv");
+            default    -> throw new IllegalArgumentException("Unsupported format: " + format);
+        };
+    }
 }

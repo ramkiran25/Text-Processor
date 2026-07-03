@@ -1,148 +1,185 @@
 package com.textprocessor;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import com.textprocessor.output.strategy.OutputStrategy;
+import com.textprocessor.output.strategy.OutputStrategyFactory;
+import com.textprocessor.service.ReaderSupplier;
+import com.textprocessor.service.TextProcessingService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import com.textprocessor.output.strategy.CsvOutputStrategy;
-import com.textprocessor.output.strategy.OutputStrategy;
-import com.textprocessor.output.strategy.XmlOutputStrategy;
-import com.textprocessor.parser.StreamingTextParser;
-import com.textprocessor.service.TextProcessingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
- * TextProcessorApplication serves as the main entry point and Command Line Interface (CLI) driver
- * for the text-processing system. It is responsible for parsing command-line parameters, managing
- * I/O resources, initializing the TextProcessingService engine, and printing execution performance
- * benchmarks to the standard error stream (System.err).
- * 
- * To support a strict 32 MB JVM heap constraint, the architecture relies on a two-pass streaming
- * design. Because a standard Unix pipe (System.in) cannot be natively reset or reread without
- * caching its content, this class intercepts standard input streams and safely drains them onto the
- * local disk as a temporary file. This ensures that the application can execute both
- * stream-analysis passes without blowing out the heap, even when handling multi-gigabyte streams.
- * Command-Line Interface (CLI) Usage The application evaluates positional arguments to configure
- * its input, output, and serialization modes.
- * 
- * Bash # Case 1: Read from a physical file, write directly to standard output java -jar app.jar
- * <xml|csv> <input_file>
- * 
- * # Case 2: Read from a physical file, write directly to a destination file java -jar app.jar
- * <xml|csv> <input_file> <output_file>
- * 
- * # Case 3: Read from standard input (piped stream), write to standard output cat input.txt | java
- * -jar app.jar <xml|csv>
+ * Entry point and CLI driver for the text-processing system.
+ *
+ * <p>Parses command-line arguments, resolves input/output sources, delegates
+ * all processing to the Spring-managed {@link TextProcessingService}, and
+ * prints an execution benchmark on completion.
+ *
+ * <h2>Usage</h2>
+ * <pre>
+ *   # File → stdout
+ *   java -jar app.jar &lt;xml|csv&gt; &lt;input_file&gt;
+ *
+ *   # File → file
+ *   java -jar app.jar &lt;xml|csv&gt; &lt;input_file&gt; &lt;output_file&gt;
+ *
+ *   # stdin → stdout  (stream is drained to a temp file for the two-pass read)
+ *   cat input.txt | java -jar app.jar &lt;xml|csv&gt;
+ * </pre>
+ *
+ * <h2>Memory design</h2>
+ * The two-pass streaming pipeline requires reading the source twice.
+ * When input comes from stdin (a non-rewindable stream) it is drained to
+ * a local temp file first, keeping heap usage well within the 32 MB constraint
+ * regardless of input size.
  */
 @Slf4j
 @SpringBootApplication
 @RequiredArgsConstructor
 public class TextProcessorApplication implements CommandLineRunner {
-  private static final String CSV_TYPE = "csv";
-  private static final String XML_TYPE = "xml";
-  private static final int BUFFER_SIZE = 16 * 1024; // 16KB — matches parser read buffer
 
-  private static OutputStrategy resolveStrategy(String format) {
-    return switch (format) {
-      case XML_TYPE -> new XmlOutputStrategy();
-      case CSV_TYPE -> new CsvOutputStrategy();
-      // case JSON_TYPE -> new JsonOutputStrategy();
-      default -> throw new IllegalArgumentException(
-          "Invalid format: '" + format + "'. Supported formats: xml, csv");
-    };
-  }
+    private static final int BUFFER_SIZE = 16 * 1024; // 16 KB — matches parser read buffer
 
-  private static void printBenchmark(long bytes, double mb, double ms) {
-    log.info("\n=======================================================");
-    log.info(
-        "[DATASET]     File size : " + bytes + " bytes (" + String.format("%.2f", mb) + " MB)");
-    log.info("[PERFORMANCE] Duration  : " + String.format("%.2f", ms) + " ms");
-    log.info("=======================================================\n");
-  }
+    private final TextProcessingService service;   // injected by Spring — no manual new()
 
-  @Override
-  public void run(String... args) throws Exception {
-    if (args.length < 1) {
-      System.err.println("Usage: java -jar app.jar <xml|csv> [input_file] [output_file]");
-      System.exit(1);
+    // ── Entry point ───────────────────────────────────────────────────────────
+
+    public static void main(String[] args) {
+        System.exit(SpringApplication.exit(SpringApplication.run(TextProcessorApplication.class, args)));
     }
 
-    String format = args[0].trim().toLowerCase();
-    String inputFilePath = (args.length >= 2) ? args[1].trim() : null;
-    String outputFilePath = (args.length >= 3) ? args[2].trim() : null;
+    // ── CommandLineRunner ─────────────────────────────────────────────────────
 
-    // --- Resolve input source -------------------------------------------------
-    // If no input file is given, drain stdin to a temp file so we can read it twice.
-    File inputFile;
-    Path tempFile = null;
-    if (inputFilePath != null) {
-      inputFile = new File(inputFilePath);
-      if (!inputFile.exists() || !inputFile.isFile()) {
-        log.error("\n=======================================================");
-        log.error("ERROR: Input file '" + inputFilePath + "' does not exist or is invalid.");
-        log.error("=======================================================\n");
-        System.exit(1);
-      }
-    } else {
-      // Stdin mode — buffer to temp file
-      tempFile = Files.createTempFile("textproc-", ".tmp");
-      inputFile = tempFile.toFile();
-      log.info("[INFO] Reading from stdin — buffering to temp file...");
-      try (InputStream stdin = System.in) {
-        Files.copy(stdin, tempFile, StandardCopyOption.REPLACE_EXISTING);
-      }
+    @Override
+    public void run(String... args) throws Exception {
+        CliArgs cliArgs = CliArgs.parse(args);
+
+        OutputStrategy strategy = OutputStrategyFactory.forFormat(cliArgs.format());
+
+        // Stage input: physical file or stdin drained to a temp file
+        try (InputStage input = InputStage.open(cliArgs.inputFilePath())) {
+
+            log.info("Processing: {} ({} MB)",
+                    input.displayName(),
+                    String.format("%.2f", input.sizeMb()));
+
+            try (Writer writer = openWriter(cliArgs.outputFilePath())) {
+                long startNs = System.nanoTime();
+                service.runTwoPasses(input.readerSupplier(), writer, strategy);
+                writer.flush();
+                long elapsedMs = (System.nanoTime() - startNs) / 1_000_000;
+
+                printBenchmark(input.sizeBytes(), input.sizeMb(), elapsedMs);
+            }
+        }
     }
 
-    // --- Strategy & service ------------- --------------------------------------
-    OutputStrategy strategy = resolveStrategy(format);
-    StreamingTextParser parser = new StreamingTextParser();
-    TextProcessingService service = new TextProcessingService(parser);
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    long fileSizeBytes = inputFile.length();
-    double fileSizeMegabytes = fileSizeBytes / (1024.0 * 1024.0);
-
-    log.info("[INFO] Processing: " + inputFile.getName() + " ("
-        + String.format("%.2f", fileSizeMegabytes) + " MB)");
-
-    // ReaderSupplier reopens the file for each pass (safe for temp file too)
-    TextProcessingService.ReaderSupplier fileSupplier = () -> new BufferedReader(
-        new InputStreamReader(new FileInputStream(inputFile), StandardCharsets.UTF_8), BUFFER_SIZE);
-
-    // --- Output destination ---------------------------------------------------
-    Writer rawWriter = (outputFilePath != null)
-        ? new OutputStreamWriter(new FileOutputStream(outputFilePath), StandardCharsets.UTF_8)
-        : new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
-
-    try (BufferedWriter outputWriter = new BufferedWriter(rawWriter, BUFFER_SIZE)) {
-      long startTime = System.nanoTime();
-      service.process(fileSupplier, outputWriter, strategy);
-      outputWriter.flush();
-      long endTime = System.nanoTime();
-
-      printBenchmark(fileSizeBytes, fileSizeMegabytes, (endTime - startTime) / 1_000_000.0);
-    } finally {
-      // Clean up temp file if we created one for stdin
-      if (tempFile != null) {
-        Files.deleteIfExists(tempFile);
-      }
+    private static Writer openWriter(String outputFilePath) throws IOException {
+        OutputStream out = (outputFilePath != null)
+                ? new FileOutputStream(outputFilePath)
+                : System.out;
+        return new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), BUFFER_SIZE);
     }
-  }
 
-  public static void main(String[] args) throws Exception {
-    SpringApplication.run(TextProcessorApplication.class, args);
-  }
+    private static void printBenchmark(long bytes, double mb, long ms) {
+        log.info("=======================================================");
+        log.info("[DATASET]     File size : {} bytes ({} MB)", bytes, String.format("%.2f", mb));
+        log.info("[PERFORMANCE] Duration  : {} ms", ms);
+        log.info("=======================================================");
+    }
+
+    // ── CliArgs — parses and validates the raw args array ────────────────────
+
+    /**
+     * Value object that owns argument parsing and validation.
+     * Throws {@link IllegalArgumentException} on bad input — callers decide how to handle it.
+     */
+    record CliArgs(String format, String inputFilePath, String outputFilePath) {
+
+        static CliArgs parse(String[] args) {
+            if (args.length < 1) {
+                throw new IllegalArgumentException(
+                        "Usage: java -jar app.jar <xml|csv> [input_file] [output_file]");
+            }
+            String format         = args[0].trim().toLowerCase();
+            String inputFilePath  = args.length >= 2 ? args[1].trim() : null;
+            String outputFilePath = args.length >= 3 ? args[2].trim() : null;
+
+            if (inputFilePath != null) {
+                File inputFile = new File(inputFilePath);
+                if (!inputFile.exists() || !inputFile.isFile()) {
+                    throw new IllegalArgumentException(
+                            "Input file '" + inputFilePath + "' does not exist or is not a file.");
+                }
+            }
+
+            return new CliArgs(format, inputFilePath, outputFilePath);
+        }
+    }
+
+    // ── InputStage — resolves input source and exposes a ReaderSupplier ──────
+
+    /**
+     * Abstracts over the two input modes (physical file vs stdin).
+     *
+     * <p>When stdin is the source, the stream is drained to a temp file on open
+     * and deleted on close. This makes the {@link ReaderSupplier} safely rewindable
+     * for the second parse pass without loading the content into heap memory.
+     *
+     * <p>Always use inside a try-with-resources block.
+     */
+    static final class InputStage implements Closeable {
+
+        private final File   file;
+        private final Path   tempPath;   // non-null only when stdin was drained
+
+        private InputStage(File file, Path tempPath) {
+            this.file     = file;
+            this.tempPath = tempPath;
+        }
+
+        static InputStage open(String inputFilePath) throws IOException {
+            if (inputFilePath != null) {
+                return new InputStage(new File(inputFilePath), null);
+            }
+
+            // Drain stdin → temp file for two-pass rewind
+            log.info("Reading from stdin — buffering to temp file…");
+            Path temp = Files.createTempFile("textproc-stdin-", ".tmp");
+            try (InputStream stdin = System.in) {
+                Files.copy(stdin, temp, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return new InputStage(temp.toFile(), temp);
+        }
+
+        /** A new buffered reader from the beginning of the file — safe to call twice. */
+        ReaderSupplier readerSupplier() {
+            return () -> new BufferedReader(
+                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8),
+                    BUFFER_SIZE);
+        }
+
+        String displayName() { return (tempPath != null) ? "<stdin>" : file.getName(); }
+        long   sizeBytes()   { return file.length(); }
+        double sizeMb()      { return sizeBytes() / (1024.0 * 1024.0); }
+
+        @Override
+        public void close() throws IOException {
+            if (tempPath != null) {
+                Files.deleteIfExists(tempPath);
+                log.debug("Temp file for stdin deleted: {}", tempPath.getFileName());
+            }
+        }
+    }
 }
-
