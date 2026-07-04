@@ -18,12 +18,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Thin REST controller — owns only HTTP concerns: request binding, response shape, status codes,
- * and error mapping.
- *
- * All processing decisions live in {@link TextProcessingService}.
- */
+
 @Slf4j
 @RestController
 @RequestMapping("/api/text")
@@ -33,21 +28,12 @@ public class TextProcessingController {
 
   private final TextProcessingService textProcessingService;
 
-  /**
+  /*
    * Accepts a plain-text file and transforms it to the requested format (xml | csv).
-   *
-   * <p>
-   * Two output modes driven by {@code outputPath}:
-   * <ul>
-   * <li>If {@code outputPath} is present → write to server-side disk, return 200 + status
-   * body.</li>
-   * <li>If absent → stream the transformed content as a file download.</li>
-   * </ul>
    */
   @PostMapping("/process")
-  public ResponseEntity<?> process(@RequestParam("file") MultipartFile file,
-      @RequestParam("format") String format,
-      @RequestParam(value = "outputPath", required = false) String outputPath) {
+  public ResponseEntity<?> process(@RequestParam MultipartFile file, @RequestParam String format,
+      @RequestParam(required = false) String outputPath) {
 
     try {
       var request = ProcessingRequest.of(file, format, outputPath);
@@ -72,6 +58,7 @@ public class TextProcessingController {
 
   // ── private helpers ───────────────────────────────────────────────────────
 
+  @SuppressWarnings("null")
   private ResponseEntity<StreamingResponseBody> buildStreamingResponse(ProcessingRequest request) {
     MediaType mediaType = resolveMediaType(request.format());
     String fileName = "processed_document." + request.format();

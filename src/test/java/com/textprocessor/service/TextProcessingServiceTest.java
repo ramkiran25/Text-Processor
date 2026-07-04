@@ -15,15 +15,6 @@ import java.io.StringWriter;
 
 import static org.assertj.core.api.Assertions.*;
 
-/**
- * Unit tests for {@link TextProcessingService#runTwoPasses}.
- *
- * Uses a real {@link StreamingTextParser} and real output strategies — the focus is correctness of
- * the full pipeline, not mock interactions.
- *
- * The package matches {@code com.textprocessor.service} so that {@code runTwoPasses}
- * (package-private) is accessible without reflection.
- */
 class TextProcessingServiceTest {
 
   private TextProcessingService service;
