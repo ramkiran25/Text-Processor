@@ -62,7 +62,8 @@ public class TextProcessingService {
 
     try (TempFileStager stager = new TempFileStager(request.file());
         BufferedWriter bufferedWriter = new BufferedWriter(responseWriter, BUFFER_SIZE)) {
-
+      bufferedWriter.write("...");
+      bufferedWriter.flush();
       runTwoPasses(stager.readerSupplier(), bufferedWriter, strategy);
     }
   }

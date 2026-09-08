@@ -18,48 +18,22 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
-
 @Slf4j
 @RestController
 @RequestMapping("/api/text")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:4200}")
+@CrossOrigin(origins = "http://localhost:4200")
 public class TextProcessingController {
 
   private final TextProcessingService textProcessingService;
 
-  /*
-   * Accepts a plain-text file and transforms it to the requested format (xml | csv).
-   */
   @PostMapping("/process")
-  public ResponseEntity<?> process(@RequestParam MultipartFile file, @RequestParam String format,
-      @RequestParam(required = false) String outputPath) {
+  public ResponseEntity<StreamingResponseBody> process(@RequestParam MultipartFile file,
+      @RequestParam String format, @RequestParam(required = false) String outputPath) {
 
-    try {
-      var request = ProcessingRequest.of(file, format, outputPath);
+    String normalizedFormat = (format != null) ? format.toLowerCase().trim() : "";
+    var request = ProcessingRequest.of(file, normalizedFormat, outputPath);
 
-      if (request.isLocalWrite()) {
-        textProcessingService.processToLocalDisk(request);
-        return ResponseEntity.ok(new StatusResponse("Success", "Saved to " + outputPath));
-      }
-
-      return buildStreamingResponse(request);
-
-    } catch (IllegalArgumentException e) {
-      log.warn("Bad request: {}", e.getMessage());
-      return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-
-    } catch (Exception e) {
-      log.error("Unhandled exception during processing", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new ErrorResponse("Internal processing failure"));
-    }
-  }
-
-  // ── private helpers ───────────────────────────────────────────────────────
-
-  @SuppressWarnings("null")
-  private ResponseEntity<StreamingResponseBody> buildStreamingResponse(ProcessingRequest request) {
     MediaType mediaType = resolveMediaType(request.format());
     String fileName = "processed_document." + request.format();
 
