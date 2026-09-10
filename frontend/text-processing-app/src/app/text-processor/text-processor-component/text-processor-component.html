@@ -1,0 +1,79 @@
+<div class="processor-container">
+  <form [formGroup]="processorForm" novalidate>
+    <h2>Text Streaming Processor, 32 MB Memory Constraint</h2>
+    <p class="subtitle">Upload your document to run full-stream structural formatting pipelines.</p>
+
+    <div class="alert error-alert" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+    
+    <div class="alert success-alert" *ngIf="successMessage">
+       {{ successMessage }}
+    </div>
+
+    <div class="form-control">
+      <label>Select Target Document</label>
+      <div class="file-drop-zone" [class.file-loaded]="selectedFile">
+        <input 
+          type="file" 
+          id="fileBrowser" 
+          accept=".txt,.log,.csv" 
+          (change)="onFileSelected($event)" 
+        />
+        <label for="fileBrowser" class="file-label-btn">
+          <span>📁 {{ selectedFile ? selectedFile.name : 'Browse Local Files...' }}</span>
+        </label>
+        <small *ngIf="selectedFile">Size: ({{ (selectedFile.size / 1024).toFixed(2) }} KB)</small>
+      </div>
+    </div>
+
+    <div class="form-control">
+      <label for="format">Output Transformation Format</label>
+      <select id="format" formControlName="format">
+        <option value="csv">Comma-Separated Values (CSV)</option>
+        <option value="xml">Extensible Markup Language (XML)</option>
+      </select>
+    </div>
+
+    <div class="form-control">
+      <label for="outputPath">Server Output File Path (Optional)</label>
+      <input 
+        type="text" 
+        id="outputPath" 
+        formControlName="outputPath"
+        placeholder="e.g., C:/workspace/output.csv"
+      />
+      <small style="color: #64748b; margin-top: 4px; font-size: 0.775rem;">
+        Leave blank to default to an automatic browser download.
+      </small>
+    </div>
+
+    <div class="progress-container" *ngIf="isLoading">
+      <div class="progress-bar-label">
+        <span>Processing text stream...</span>
+        <span>{{ progressValue }}%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" [style.width.%]="progressValue"></div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button 
+        type="button" 
+        *ngIf="!showDownloadButton"
+        [disabled]="!selectedFile || processorForm.invalid || isLoading"
+        (click)="onSubmit()">
+        <span>{{ isLoading ? 'Processing Stream...' : 'Process & Convert Document →' }}</span>
+      </button>
+
+      <button 
+        type="button" 
+        class="btn-success"
+        *ngIf="showDownloadButton" 
+        (click)="triggerFileDownload()">
+        <span>💾 Download & View Output File</span>
+      </button>
+    </div>
+  </form>
+</div>

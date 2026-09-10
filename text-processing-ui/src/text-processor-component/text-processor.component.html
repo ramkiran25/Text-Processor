@@ -1,0 +1,57 @@
+<div class="card-container">
+  <h2>Enterprise Text Analysis Engine</h2>
+  <p class="subtitle">Upload a plain-text document to execute server-side format
+    transformation</p>
+
+  <!-- File Input -->
+  <div class="field-group">
+    <label for="fileInput">Upload Source File</label>
+    <input
+      type="file"
+      id="fileInput"
+      (change)="onFileSelected($event)"
+      accept=".txt,.log,.text" />
+  </div>
+
+  <!-- Format Selector dropdown matching Spring Boot format options -->
+  <div class="field-group">
+    <label for="formatSelect">Target Output Format</label>
+    <select id="formatSelect" [ngModel]="selectedFormat()"
+      (ngModelChange)="selectedFormat.set($event)">
+      <option value="xml">XML Document (.xml)</option>
+      <option value="csv">CSV Spreadsheet (.csv)</option>
+    </select>
+  </div>
+
+  <!-- Submit Button -->
+  <button
+    class="btn-primary"
+    [disabled]="!selectedFile() || isProcessing()"
+    (click)="executeProcessing()">
+    {{ isProcessing() ? 'Transforming Document...' : 'Execute Text Processing'
+    }}
+  </button>
+
+  <!-- Green Progress Bar -->
+  <div class="progress-section" *ngIf="isProcessing() || progress() > 0">
+    <div class="progress-header">
+      <span class="progress-label">Task Execution Progress</span>
+      <span class="progress-percent">{{ progress() }}%</span>
+    </div>
+
+    <div class="progress-track">
+      <div
+        class="progress-fill"
+        [style.width.%]="progress()"></div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="status-alert" *ngIf="statusMessage()">
+    {{ statusMessage() }}
+  </div>
+
+  <div class="error-alert" *ngIf="errorMessage()">
+    {{ errorMessage() }}
+  </div>
+</div>

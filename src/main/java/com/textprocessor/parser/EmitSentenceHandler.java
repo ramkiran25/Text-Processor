@@ -27,7 +27,7 @@ public class EmitSentenceHandler implements TokenHandler {
   private final List<String> words = new ArrayList<>();
   private int sentenceIndex = 1;
 
-  EmitSentenceHandler(Writer writer, OutputStrategy strategy) {
+  public EmitSentenceHandler(Writer writer, OutputStrategy strategy) {
     this.writer = writer;
     this.strategy = strategy;
   }
@@ -46,7 +46,7 @@ public class EmitSentenceHandler implements TokenHandler {
     }
   }
 
-  void flush() throws IOException {
+  public void flush() throws IOException {
     onSentenceEnd();
   }
 

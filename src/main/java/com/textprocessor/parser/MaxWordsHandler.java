@@ -12,7 +12,7 @@ package com.textprocessor.parser;
  * dimension constraints of massive data sets with a constant O(1) space complexity.
  */
 public class MaxWordsHandler implements TokenHandler {
-  int maxWords = 0;
+  public int maxWords = 0;
   private int current = 0;
 
   @Override

@@ -1,0 +1,89 @@
+/* Container / Global resets for proper alignment */
+form {
+	max-width: 400px;
+	margin: 80px auto;
+	padding: 2rem;
+	box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1); /* Soft blue-tinted shadow */
+	border-radius: 12px;
+	background-color: #ffffff;
+	box-sizing: border-box; /* Crucial: ensures padding doesn't break input widths */
+	display: flex;
+	flex-direction: column;
+}
+
+/* Flattened Heading */
+form h1 {
+	margin-top: 0;
+	margin-bottom: 1.5rem;
+	color: #1e3a8a; /* Deep slate navy-blue */
+	font-size: 1.75rem;
+	font-weight: 700;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #eff6ff; /* Soft blue underline accent */
+}
+
+/* Form Control Alignment Wrapper */
+.form-control {
+	margin-bottom: 1.25rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start; /* Aligns labels and inputs perfectly to the left */
+	width: 100%;
+}
+
+.form-control label {
+	display: block;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #1e40af; /* Classic blue label */
+	margin-bottom: 6px;
+}
+
+.form-control input {
+	display: block;
+	padding: 10px 12px;
+	height: 42px;
+	border-radius: 6px;
+	width: 100%;
+	border: 1.5px solid #bfdbfe; /* Light blue border */
+	background-color: #ffffff;
+	color: #1e293b;
+	box-sizing: border-box; /* Prevents inputs from overflowing parent container */
+	transition: all 0.2s ease-in-out;
+}
+
+/* Input Hover State */
+.form-control input:hover {
+	border-color: #3b82f6; /* Vibrant blue hover state */
+}
+
+/* Pure CSS Focus States (Replaces the mixin) */
+.form-control input:focus {
+	outline-offset: 2px;
+	outline: 2px solid #2563eb; /* Focused bold blue */
+}
+
+/* Button Styling */
+button {
+	background-color: #2563eb; /* Premium digital blue */
+	color: #ffffff;
+	padding: 10px 24px;
+	border: none;
+	border-radius: 6px;
+	width: 100%;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-sizing: border-box;
+	transition: background-color 0.2s ease;
+	margin-top: 0.5rem;
+}
+
+button:hover {
+	background-color: #1d4ed8; /* Darker royal blue on hover */
+}
+
+button:focus {
+	outline-offset: 2px;
+	outline: 2px solid #2563eb;
+}

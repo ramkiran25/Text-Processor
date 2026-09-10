@@ -2,26 +2,20 @@ package com.textprocessor.parser;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import com.textprocessor.model.Sentence;
-import com.textprocessor.output.strategy.OutputStrategy;
 
 /**
- * The StreamingTextParser is the core tokenization and orchestration engine of the text processing
- * service. It is designed to process large,text streams efficiently while adhering to strict memory
- * constraints
+ * High-performance, memory-safe streaming tokenizer. Operates with O(1) space complexity by
+ * streaming characters directly into a reusable buffer and broadcasting events to a TokenHandler.
  */
 public class StreamingTextParser {
 
-  private static final int PARSE_BUFFER_SIZE = 16384;
-  // A whitelist of known abbreviations to prevent false-positive terminal punctuation
+  private static final int PARSE_BUFFER_SIZE = 16 * 1024;// 16KB
+  private static final int MAX_WORD_LENGTH = 2048;
+
   private final Set<String> knownAbbreviations;
 
   public StreamingTextParser() {
-    // Default constructor using a standard set of common abbreviations
     this(Set.of("Mr", "Mrs", "Ms", "Dr", "St", "etc"));
   }
 
@@ -29,145 +23,61 @@ public class StreamingTextParser {
     this.knownAbbreviations = knownAbbreviations;
   }
 
-  public int findMaxWords(Reader reader) throws IOException {
-    int maxWords = 0;
-    int currentSentenceWords = 0;
-    StringBuilder wordBuilder = new StringBuilder();
-
+  public void parseStream(Reader reader, TokenHandler handler) throws IOException {
     char[] buffer = new char[PARSE_BUFFER_SIZE];
+    char[] wordBuffer = new char[MAX_WORD_LENGTH];
+
+    int wordLen = 0;
+    int wordsInCurrentSentence = 0;
     int charsRead;
 
     while ((charsRead = reader.read(buffer)) != -1) {
       for (int i = 0; i < charsRead; i++) {
         char c = buffer[i];
 
-        if (c == '.' || c == '!' || c == '?') {
-          boolean isTerminal = true;
-          if (i + 1 < charsRead) {
-            char next = buffer[i + 1];
-            if (Character.isLetterOrDigit(next)) {
-              isTerminal = false;
-            }
-          }
-
-          if (c == '.' && isTerminal && isAbbreviation(wordBuilder.toString())) {
-            isTerminal = false;
-          }
-
-          if (!isTerminal) {
-            wordBuilder.append(c);
-          } else {
-            if (wordBuilder.length() > 0) {
-              currentSentenceWords++;
-              wordBuilder.setLength(0);
-            }
-            if (currentSentenceWords > maxWords) {
-              maxWords = currentSentenceWords;
-            }
-            currentSentenceWords = 0;
-          }
-        } else if (Character.isLetterOrDigit(c) || c == '’' || c == '\'') {
-          if (c == '’') {
-            wordBuilder.append('\'');
-          } else {
-            wordBuilder.append(c);
-          }
+        if (Character.isLetterOrDigit(c)) {
+          wordLen = appendCharacter(wordBuffer, wordLen, c);
         } else {
-          if (wordBuilder.length() > 0) {
-            currentSentenceWords++;
-            wordBuilder.setLength(0);
+          if (wordLen > 0) {
+            String wordStr = new String(wordBuffer, 0, wordLen);
+            handler.onWord(wordBuffer, wordLen);
+            wordsInCurrentSentence++;
+            wordLen = 0;
+
+            if (c == '.' && knownAbbreviations.contains(wordStr)) {
+              continue;
+            }
+          }
+
+          switch (c) {
+            case '.', '?', '!' -> {
+              if (wordsInCurrentSentence > 0) {
+                handler.onSentenceEnd();
+                wordsInCurrentSentence = 0;
+              }
+            }
+            default -> {
+              /* Skip whitespace or normal non-word delimiter characters */ }
           }
         }
       }
     }
-
-    if (wordBuilder.length() > 0) {
-      currentSentenceWords++;
-    }
-    if (currentSentenceWords > maxWords) {
-      maxWords = currentSentenceWords;
+    // Flush any leftover word stuck in the trailing buffer at EOF
+    if (wordLen > 0) {
+      handler.onWord(wordBuffer, wordLen);
+      wordsInCurrentSentence++;
     }
 
-    return maxWords;
-  }
-
-  public void parseAndStream(Reader reader, Writer writer, OutputStrategy strategy, int maxWords)
-      throws IOException {
-    strategy.startDocument(writer, maxWords);
-
-    List<String> words = new ArrayList<>();
-    StringBuilder wordBuilder = new StringBuilder();
-    char[] buffer = new char[PARSE_BUFFER_SIZE];
-    int charsRead;
-    int sentenceIndex = 1;
-
-    while ((charsRead = reader.read(buffer)) != -1) {
-      for (int i = 0; i < charsRead; i++) {
-        char c = buffer[i];
-
-        if (c == '.' || c == '!' || c == '?') {
-          boolean isTerminal = true;
-          if (i + 1 < charsRead) {
-            char next = buffer[i + 1];
-            if (Character.isLetterOrDigit(next)) {
-              isTerminal = false;
-            }
-          }
-
-          if (c == '.' && isTerminal && isAbbreviation(wordBuilder.toString())) {
-            isTerminal = false;
-          }
-
-          if (!isTerminal) {
-            wordBuilder.append(c);
-          } else {
-            flushWord(wordBuilder, words);
-            if (!words.isEmpty()) {
-              emitSortedSentence(words, writer, strategy, sentenceIndex++);
-            }
-          }
-        } else if (Character.isLetterOrDigit(c) || c == '’' || c == '\'') {
-          if (c == '’') {
-            wordBuilder.append('\'');
-          } else {
-            wordBuilder.append(c);
-          }
-        } else {
-          flushWord(wordBuilder, words);
-        }
-      }
-    }
-
-    flushWord(wordBuilder, words);
-    if (!words.isEmpty()) {
-      emitSortedSentence(words, writer, strategy, sentenceIndex);
-    }
-
-    strategy.endDocument(writer);
-    writer.flush();
-  }
-
-  private void flushWord(StringBuilder wordBuilder, List<String> words) {
-    if (wordBuilder.length() > 0) {
-      String token = wordBuilder.toString();
-      if (!token.equals("-")) {
-        words.add(token);
-      }
-      wordBuilder.setLength(0);
+    // Guarantee a closing boundary signal for the document if data was parsed
+    if (wordsInCurrentSentence > 0) {
+      handler.onSentenceEnd();
     }
   }
 
-  private void emitSortedSentence(List<String> words, Writer writer, OutputStrategy strategy,
-      int sentenceIndex) throws IOException {
-    words.sort((s1, s2) -> {
-      int cmp = s1.compareToIgnoreCase(s2);
-      return (cmp != 0) ? cmp : s2.compareTo(s1);
-    });
-    strategy.writeSentence(writer, new Sentence(words), sentenceIndex);
-    words.clear();
-  }
-
-  private boolean isAbbreviation(String token) {
-    return knownAbbreviations.contains(token);
+  private int appendCharacter(char[] wordBuffer, int wordLen, char c) {
+    if (wordLen < wordBuffer.length) {
+      wordBuffer[wordLen++] = c;
+    }
+    return wordLen;
   }
 }
