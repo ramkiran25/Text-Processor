@@ -1,0 +1,36 @@
+<div class="login-container">
+    <h2 class="login-title">Sign In</h2>
+
+    @if (errorMessage()) {
+    <div class="alert alert-error">
+        {{ errorMessage() }}
+    </div>
+    }
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input
+                id="username"
+                type="text"
+                formControlName="username"
+                placeholder="Enter your username"
+                [class.is-invalid]="loginForm.controls.username.invalid && loginForm.controls.username.touched" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input
+                id="password"
+                type="password"
+                formControlName="password"
+                placeholder="Enter your password"
+                [class.is-invalid]="loginForm.controls.password.invalid && loginForm.controls.password.touched" />
+        </div>
+
+        <button type="submit" class="btn-login"
+            [disabled]="isLoading() || loginForm.invalid">
+            {{ isLoading() ? 'Logging in...' : 'Sign In →' }}
+        </button>
+    </form>
+</div>

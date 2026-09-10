@@ -1,4 +1,4 @@
-## Streaming Text Processing Service
+## Enterprise Text Analysis Engine
 
 A highly optimized, low-footprint enterprise Java application integrated with a modern Angular dashboard to process large text streams into structured **XML** or **CSV** formats.
 
@@ -8,7 +8,31 @@ The solution implements a **multi-pass streaming architecture** designed to main
 
 ---
 
-### Web User Interface Dashboard
+
+##Secure Access Control
+
+Access to the dashboard configuration and processing functionality is protected by a lightweight login interface.
+
+<div align="center">
+  <div style="
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid #d9dee5;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  ">
+    <img
+      src="assets/login.png"
+      alt="User Login Gateway"
+      style="display: block; max-width: 100%; height: auto; border-radius: 5px;"
+    />
+  </div>
+</div>
+
+
+
+### Dashboard
 
 The frontend is built using **Angular**, providing an intuitive data-processing dashboard for configuring and monitoring text transformation jobs.
 
@@ -37,7 +61,7 @@ The dashboard allows users to:
   </div>
 </div>
 
-### ✨ Core UI Capabilities
+### Core UI Capabilities
 
 #### Dynamic Upload States
 
@@ -61,32 +85,8 @@ The frontend supports different output workflows depending on where the processe
 
 ---
 
-##Secure Access Control
 
-Access to the dashboard configuration and processing functionality is protected by a lightweight authentication interface.
-
-<div align="center">
-  <div style="
-    display: inline-block;
-    padding: 10px;
-    border: 1px solid #d9dee5;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  ">
-    <img
-      src="docs/login.PNG"
-      alt="User Login Gateway"
-      style="display: block; max-width: 100%; height: auto; border-radius: 5px;"
-    />
-  </div>
-</div>
-
-
-
----
-
-# 🏗️ Architectural Constraints
+# Architectural Constraints
 
 ## 1. 32 MB Heap Limit Compliance
 
