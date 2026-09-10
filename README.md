@@ -6,10 +6,7 @@ Words within sentences are automatically sorted in **case-insensitive alphabetic
 
 The solution implements a **multi-pass streaming architecture** designed to maintain predictable memory consumption and linear I/O complexity under a strict **32 MB JVM heap constraint**.
 
----
-
-
-##Secure Access Control
+## Secure Access Control
 
 Access to the dashboard configuration and processing functionality is protected by a lightweight login interface.
 
