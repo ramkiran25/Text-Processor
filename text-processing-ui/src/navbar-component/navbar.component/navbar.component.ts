@@ -1,13 +1,13 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../service/auth.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive], // CommonModule removed as @if is built-in
   template: `
-    @if (isAuthenticated()) {
+    @if (authService.isAuthenticated()) {
       <nav class="navbar">
         <div class="nav-brand">
           <span class="brand-title">Enterprise Text Processor</span>
@@ -18,7 +18,9 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
             Text Engine
           </a>
 
-          <button class="btn-logout" (click)="onLogout()">Logout ({{ currentUser() }})</button>
+          <button class="btn-logout" (click)="onLogout()">
+            Logout ({{ authService.currentUser() }})
+          </button>
         </div>
       </nav>
     }
@@ -29,8 +31,8 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #ffffff; /* Clean white background */
-        border-bottom: 1px solid #e2e8f0; /* Subtle bottom border */
+        background-color: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
         padding: 0.75rem 2rem;
         color: #334155;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -38,9 +40,6 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
           Inter,
           system-ui,
           -apple-system,
-          BlinkMacSystemFont,
-          'Segoe UI',
-          Roboto,
           sans-serif;
       }
 
@@ -48,7 +47,6 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
         font-size: 1.1rem;
         font-weight: 600;
         color: #1e293b;
-        letter-spacing: -0.3px;
       }
 
       .nav-links {
@@ -57,7 +55,6 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
         gap: 1.25rem;
       }
 
-      /* Muted Text Engine Link / Tab */
       .nav-links a {
         color: #64748b;
         text-decoration: none;
@@ -79,7 +76,6 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
         font-weight: 600;
       }
 
-      /* Mild, Sober Logout Button */
       .btn-logout {
         background-color: transparent;
         color: #64748b;
@@ -100,28 +96,12 @@ import { RouterLink, RouterLinkActive, Router } from '@angular/router';
     `,
   ],
 })
-export class NavbarComponent implements OnInit {
-  private router = inject(Router);
-
-  isAuthenticated = signal<boolean>(false);
-  currentUser = signal<string | null>('');
-
-  ngOnInit(): void {
-    this.checkAuthStatus();
-  }
-
-  checkAuthStatus(): void {
-    const authFlag = localStorage.getItem('isAuthenticated');
-    this.isAuthenticated.set(authFlag === 'true');
-    this.currentUser.set(localStorage.getItem('currentUser') || 'Admin');
-  }
+export class NavbarComponent {
+  readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   onLogout(): void {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('auth_token');
-
-    this.isAuthenticated.set(false);
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 }

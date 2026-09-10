@@ -1,16 +1,29 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { LoginRequest, LoginResponse } from '../model/login.model';
+// auth.service.ts
+import { Injectable, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080/api/auth'; // Adjust base URL if proxying
+  // Angular Signal tracking login state
+  isAuthenticated = signal<boolean>(this.hasToken());
+  currentUser = signal<string>(localStorage.getItem('currentUser') || 'Admin');
 
-  login(request: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/login`, request);
+  private hasToken(): boolean {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  }
+
+  login(username: string): void {
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('currentUser', username);
+
+    this.isAuthenticated.set(true);
+    this.currentUser.set(username);
+  }
+
+  logout(): void {
+    localStorage.clear();
+    this.isAuthenticated.set(false);
+    this.currentUser.set('User');
   }
 }
