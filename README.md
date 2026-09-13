@@ -13,7 +13,7 @@ The combination of:
 - **Angular-based monitoring UI**
 
 provides a scalable foundation for memory-constrained text transformation workloads.
-                                                       ## Enterprise Text Analysis Engine
+                                                       ##     Enterprise Text Analysis Engine
 
 A highly optimized, low-footprint enterprise Java application integrated with a modern Angular dashboard to process large text streams into structured **XML** or **CSV** formats.
 
