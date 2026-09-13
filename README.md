@@ -1,3 +1,4 @@
+<h2 align="center">Enterprise Text Analysis Engine</h2>
 
 ## Project Objective
 
@@ -13,7 +14,6 @@ The combination of:
 - **Angular-based monitoring UI**
 
 provides a scalable foundation for memory-constrained text transformation workloads.
-                                                       ## Enterprise Text Analysis Engine
 
 A highly optimized, low-footprint enterprise Java application integrated with a modern Angular dashboard to process large text streams into structured **XML** or **CSV** formats.
 
@@ -44,7 +44,7 @@ Access to the dashboard configuration and processing functionality is protected 
 
 
 
-### Dashboard
+## Dashboard
 
 The frontend is built using **Angular**, providing an intuitive data-processing dashboard for configuring and monitoring text transformation jobs.
 
@@ -73,7 +73,7 @@ The dashboard allows users to:
   </div>
 </div>
 
-### Core UI Capabilities
+## Core UI Capabilities
 
 #### Dynamic Upload States
 
@@ -98,9 +98,9 @@ The frontend supports different output workflows depending on where the processe
 ---
 
 
-# Architectural Constraints
+## Architectural Constraints
 
-## 1. 32 MB Heap Limit Compliance
+### 1. 32 MB Heap Limit Compliance
 
 Traditional text-processing implementations often read an entire input file into memory or construct an in-memory object tree using approaches such as DOM parsing.
 
