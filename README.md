@@ -1,4 +1,19 @@
-## Enterprise Text Analysis Engine
+
+# Project Objective
+
+The primary objective of this implementation is to demonstrate how a Java application can process potentially large text inputs under a strict memory constraint without relying on full in-memory representations.
+
+The combination of:
+
+- **streaming input processing**
+- **multi-pass execution**
+- **incremental output**
+- **strategy-based formatting**
+- **algorithmic sentence detection**
+- **Angular-based monitoring UI**
+
+provides a scalable foundation for memory-constrained text transformation workloads.
+                                                       ##Enterprise Text Analysis Engine
 
 A highly optimized, low-footprint enterprise Java application integrated with a modern Angular dashboard to process large text streams into structured **XML** or **CSV** formats.
 
@@ -607,18 +622,3 @@ This project demonstrates several production-oriented engineering techniques:
 | Testing | Parser, service, strategy and API layers |
 
 ---
-
-# Project Objective
-
-The primary objective of this implementation is to demonstrate how a Java application can process potentially large text inputs under a strict memory constraint without relying on full in-memory representations.
-
-The combination of:
-
-- **streaming input processing**
-- **multi-pass execution**
-- **incremental output**
-- **strategy-based formatting**
-- **algorithmic sentence detection**
-- **Angular-based monitoring UI**
-
-provides a scalable foundation for memory-constrained text transformation workloads.
