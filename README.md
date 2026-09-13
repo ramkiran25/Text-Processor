@@ -1,5 +1,5 @@
 
-# Project Objective
+## Project Objective
 
 The primary objective of this implementation is to demonstrate how a Java application can process potentially large text inputs under a strict memory constraint without relying on full in-memory representations.
 
@@ -13,7 +13,7 @@ The combination of:
 - **Angular-based monitoring UI**
 
 provides a scalable foundation for memory-constrained text transformation workloads.
-                                                       ##     Enterprise Text Analysis Engine
+                                                       ## Enterprise Text Analysis Engine
 
 A highly optimized, low-footprint enterprise Java application integrated with a modern Angular dashboard to process large text streams into structured **XML** or **CSV** formats.
 
